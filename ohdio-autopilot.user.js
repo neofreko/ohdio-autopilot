@@ -36,6 +36,8 @@ $(function () {
 
 //window.setTimeout(initOhdioAddon, 5000);
 global_added = 0;
+global_manual_play = 0;
+last_track_added = false;
 
 function searchAndAdd(artist) {
     $.ajax({
@@ -44,10 +46,14 @@ function searchAndAdd(artist) {
         dataType: 'json',
         data: {query: artist.name},
         success: function (data, status, xhr) {
+            console.log('search result: ', data)
             random_pick = Math.floor(Math.random()*data.data.length)
-            console.log(global_added,'. adding ', data.data[0].song, ' into playlist');
-            if (global_added++ < 5) {
-                unsafeWindow.QueueControl.addTrack(data.data[0])
+            console.log('about to add ', data.data[random_pick].song)
+            if (global_added < 2 && last_track_added != data.data[random_pick].song) {
+                global_added++;
+                console.log(global_added,'. adding ', data.data[random_pick].song, ' into playlist');
+                unsafeWindow.QueueControl.addTrack(data.data[random_pick])
+                last_track_added = data.data[random_pick].song
             }
         }
     });
@@ -69,16 +75,20 @@ unsafeWindow.handleSimilarArtist = function(data) {
                 console.log('Aww, no similar tracks found');
         }
 
-function initOhdioAddon() {
-    console.log('Yay, Ohdio!');
-    unsafeWindow.jwplayer().onPlaylistItem(function() { 
+unsafeWindow.handlePlayItem = function() { 
         //searchAndAdd('Mahameru')
         console.log('pass!');
         track = jwplayer().getPlaylistItem();
         console.log("will grep similar track or artist from last.fm. artist: ", track.song.artist, ' song: ', track.song.song);
         //console.log(track);
         lastfm.artist.getSimilar({artist: track.song.artist, limit: 20}, {success: unsafeWindow.handleSimilarArtist, error: function (code, message) {console.log('error', message )}})
-    });
+        global_manual_play = 0; // reset so onPlay can respond to track changes
+}
+
+function initOhdioAddon() {
+    console.log('Yay, Ohdio!');
+    unsafeWindow.jwplayer().onPlaylistItem(function(){global_manual_play = 1; unsafeWindow.handlePlayItem()})
+        //.onPlay(function() {if (!global_manual_play) unsafeWindow.handlePlayItem()});
 }
 
 //console.log('unsafeWindow', typeof unsafeWindow);
