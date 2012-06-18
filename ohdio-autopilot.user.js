@@ -2,9 +2,9 @@
 //@name Ohd.io
 //@namespace  http://neofreko.com/
 //@version    0.1
-//@description  enter something useful
+//@description  Autopilot playlist for Ohdio (https://github.com/neofreko/ohdio-autopilot)
 //@include      http://ohd.io/*
-//@copyright  2012+, You
+//@copyright  2012+, Akhmad Fathonih
 //@require https://raw.github.com/fxb/javascript-last.fm-api/master/lastfm.api.md5.js
 //@require https://raw.github.com/fxb/javascript-last.fm-api/master/lastfm.api.cache.js
 //@require https://github.com/neofreko/javascript-last.fm-api/raw/master/lastfm.api.js
@@ -16,8 +16,8 @@ var cache = new LastFMCache();
 
 /* Create a LastFM object */
 var lastfm = new LastFM({
-    apiKey    : 'f21088bf9097b49ad4e7f487abab981e',
-    apiSecret : '7ccaec2093e33cded282ec7bc81c6fca',
+    apiKey    : '814a8780d36924ce2941b3d453211dcf',
+    apiSecret : '51ba653062842d2a6eceae165af61bf9',
     //cache     : cache; // causing troubles when lastfm func called within onPlaylistItem. undefined method: getObject
 });
 
@@ -35,29 +35,34 @@ $(function () {
 });
 
 //window.setTimeout(initOhdioAddon, 5000);
+global_added = 0;
 
-function searchAndAdd(track_title) {
+function searchAndAdd(artist) {
     $.ajax({
         url: 'http://ohd.io/api/v1/find',
         type: 'POST',
         dataType: 'json',
-        data: {query: track_title},
+        data: {query: artist.name},
         success: function (data, status, xhr) {
-            console.log('adding ', data.data[0].song, ' into playlist')
-            unsafeWindow.QueueControl.addTrack(data.data[0])
+            random_pick = Math.floor(Math.random()*data.data.length)
+            console.log(global_added,'. adding ', data.data[0].song, ' into playlist');
+            if (global_added++ < 5) {
+                unsafeWindow.QueueControl.addTrack(data.data[0])
+            }
         }
     });
 }
 
-unsafeWindow.handleSimilarTrack = function(data) {
-            console.log('similartracks:', data);
-            if (typeof data.similartracks['@track'] == 'object') { // last fm will return @track if it has similarity list
+unsafeWindow.handleSimilarArtist = function(data) {
+            global_added = 0;
+            console.log('similarartists:', data);
+            if (typeof data.similarartists['@attr'] == 'object') { // last fm will return @track if it has similarity list
                 // search the track in ohdio
                 i = 0;
-                for(simtrack in data.similartracks.track) {
-                    console.log('searching ', simtrack.name, ' in ohdio');
-                    searchAndAdd(simtrack);
-                    if (i>5)
+                for(i in data.similarartists.artist) {
+                    console.log('searching ', data.similarartists.artist[i], ' in ohdio');
+                    searchAndAdd(data.similarartists.artist[i]);
+                    if (i>20)
                         break;
                 }
             } else
@@ -72,17 +77,11 @@ function initOhdioAddon() {
         track = jwplayer().getPlaylistItem();
         console.log("will grep similar track or artist from last.fm. artist: ", track.song.artist, ' song: ', track.song.song);
         //console.log(track);
-        try {
-            lastfm.track.getSimilar({artist: track.song.artist, track: track.song.song}, {success: unsafeWindow.handleSimilarTrack})
-        } catch (e) {
-            console.log('exception on lastfm.track.getSimilar: ', e);
-        }
+        lastfm.artist.getSimilar({artist: track.song.artist, limit: 20}, {success: unsafeWindow.handleSimilarArtist, error: function (code, message) {console.log('error', message )}})
     });
 }
 
 //console.log('unsafeWindow', typeof unsafeWindow);
 unsafeWindow.lastfmFoo = function(data){
-        console.log('bon jovi', data);
+        console.log('debug', data);
     }
-    
-//lastfm.track.getSimilar({artist: 'Bon Jovi', track: 'Santa fe'}, {success: unsafeWindow.lastfmFoo});
