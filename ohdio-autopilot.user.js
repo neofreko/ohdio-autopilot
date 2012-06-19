@@ -37,7 +37,6 @@ $(function () {
 //window.setTimeout(initOhdioAddon, 5000);
 global_added = 0;
 global_manual_play = 0;
-last_track_added = false;
 
 function searchAndAdd(artist) {
     $.ajax({
@@ -50,14 +49,14 @@ function searchAndAdd(artist) {
             if (data.data.length == 0)
                 return;
             random_pick = Math.floor(Math.random()*data.data.length)
-            console.log('about to add ', data.data[random_pick].song)
-            if (global_added < 2 && !unsafeWindow.isInQueue(data.data[random_pick].song)) {
+            console.log('about to add ', data.data[random_pick].song, 'using random number', random_pick, 'out of', data.data.length)
+            if (global_added < 2 && !unsafeWindow.isInQueue(data.data[random_pick])) {
                 global_added++;
                 console.log(global_added,'. adding ', data.data[random_pick].song, ' into playlist');
+                
                 unsafeWindow.QueueControl.addTrack(data.data[random_pick])
                 if (unsafeWindow.QueueControl.data.length>10)
                     unsafeWindow.QueueControl.removeTrack(0)
-                last_track_added = data.data[random_pick].song
             }
         }
     });
@@ -65,9 +64,13 @@ function searchAndAdd(artist) {
 
 unsafeWindow.isInQueue = function(data) {
     console.log(data);
-    for (i=0;i<unsafeWindow.QueueControl.data.length;i++)
-        if (unsafeWindow.QueueControl.data[i].file == data.file)
+    for (i=0;i<unsafeWindow.QueueControl.data.length;i++) {
+        //console.log('comparing', unsafeWindow.QueueControl.data[i], data)
+        if (unsafeWindow.QueueControl.data[i].file == data.file) {
+            console.log(data.song, 'already in queue')
             return true;
+        }
+    }
     return false;
 }
     
