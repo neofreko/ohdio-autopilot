@@ -51,7 +51,7 @@ function searchAndAdd(artist) {
                 return;
             random_pick = Math.floor(Math.random()*data.data.length)
             console.log('about to add ', data.data[random_pick].song)
-            if (global_added < 2 && last_track_added != data.data[random_pick].song) {
+            if (global_added < 2 && !unsafeWindow.isInQueue(data.data[random_pick].song)) {
                 global_added++;
                 console.log(global_added,'. adding ', data.data[random_pick].song, ' into playlist');
                 unsafeWindow.QueueControl.addTrack(data.data[random_pick])
@@ -63,17 +63,24 @@ function searchAndAdd(artist) {
     });
 }
 
+unsafeWindow.isInQueue = function(data) {
+    console.log(data);
+    for (i=0;i<unsafeWindow.QueueControl.data.length;i++)
+        if (unsafeWindow.QueueControl.data[i].file == data.file)
+            return true;
+    return false;
+}
+    
 unsafeWindow.handleSimilarArtist = function(data) {
             global_added = 0;
             console.log('similarartists:', data);
             if (typeof data.similarartists['@attr'] == 'object') { // last fm will return @track if it has similarity list
                 // search the track in ohdio
                 i = 0;
-                for(i in data.similarartists.artist) {
-                    console.log('searching ', data.similarartists.artist[i], ' in ohdio');
-                    searchAndAdd(data.similarartists.artist[i]);
-                    if (i>20)
-                        break;
+                for(i=0;i<20;i++) {
+                    random_pick = Math.floor(Math.random()*data.similarartists.artist.length)
+                    console.log('searching ', data.similarartists.artist[random_pick], ' in ohdio');
+                    searchAndAdd(data.similarartists.artist[random_pick]);
                 }
             } else
                 console.log('Aww, no similar tracks found');
