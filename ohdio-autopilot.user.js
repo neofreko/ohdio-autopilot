@@ -47,12 +47,16 @@ function searchAndAdd(artist) {
         data: {query: artist.name},
         success: function (data, status, xhr) {
             console.log('search result: ', data)
+            if (data.data.length == 0)
+                return;
             random_pick = Math.floor(Math.random()*data.data.length)
             console.log('about to add ', data.data[random_pick].song)
             if (global_added < 2 && last_track_added != data.data[random_pick].song) {
                 global_added++;
                 console.log(global_added,'. adding ', data.data[random_pick].song, ' into playlist');
                 unsafeWindow.QueueControl.addTrack(data.data[random_pick])
+                if (unsafeWindow.QueueControl.data.length>10)
+                    unsafeWindow.QueueControl.removeTrack(0)
                 last_track_added = data.data[random_pick].song
             }
         }
